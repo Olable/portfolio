@@ -15,11 +15,15 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 _default_hosts = 'localhost,127.0.0.1,0.0.0.0'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', _default_hosts).split(',')
-# Allow all e2b preview hosts during development
-if DEBUG:
+# Allow e2b preview host + Render/Railway preview domains automatically
+allowed_env = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+if DEBUG and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.onrender.com')
+    ALLOWED_HOSTS.append('.up.railway.app')
     ALLOWED_HOSTS.append('.e2b.app')
-    # In dev, also be lenient
-    ALLOWED_HOSTS.append('*')
+    # For convenience in Docker/dev
+    if os.environ.get('DJANGO_ALLOW_ALL_HOSTS', 'True') == 'True':
+        ALLOWED_HOSTS.append('*')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -95,7 +99,26 @@ USE_TZ = True
 # Static / media
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# The React build output is copied into static/frontend during Docker build
+# AND can be placed there manually for production.
+FRONTEND_DIST_DIR = Path(os.environ.get(
+    'FRONTEND_DIST_DIR',
+    str(BASE_DIR / 'static' / 'frontend')
+))
+
+STATICFILES_DIRS = []
+if (BASE_DIR / 'static').exists():
+    STATICFILES_DIRS.append(str(BASE_DIR / 'static'))
+
+# WhiteNoise with SPA index support
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+WHITENOISE_INDEX_FILE = True
+WHITENOISE_ROOT = str(FRONTEND_DIST_DIR)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -130,6 +153,8 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
@@ -140,11 +165,35 @@ CSRF_TRUSTED_ORIGINS = [
 extra_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if extra_origins:
     for o in extra_origins.split(','):
-        if o.strip():
-            CORS_ALLOWED_ORIGINS.append(o.strip())
-            CSRF_TRUSTED_ORIGINS.append(o.strip())
+        o = o.strip()
+        if o:
+            CORS_ALLOWED_ORIGINS.append(o)
+            CSRF_TRUSTED_ORIGINS.append(o)
 
+# Auto-allow common deployment preview domains + dev sandboxes
+_cors_regexes = [
+    r"^https://.*\.onrender\.com$",
+    r"^https://.*\.up\.railway\.app$",
+    r"^https://.*\.railway\.app$",
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.netlify\.app$",
+]
 if DEBUG:
-    # Allow e2b preview hosts in dev
-    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://.*\.e2b\.app$"]
+    _cors_regexes.append(r"^https?://.*\.e2b\.app$")
+    _cors_regexes.append(r"^http://localhost:\d+$")
+    _cors_regexes.append(r"^http://127\.0\.0\.1:\d+$")
+CORS_ALLOWED_ORIGIN_REGEXES = _cors_regexes
+
+# Auto-add platform preview origins to CSRF trusted
+for _host in ['.onrender.com', '.up.railway.app', '.railway.app', '.vercel.app', '.netlify.app']:
+    CSRF_TRUSTED_ORIGINS.append(f'https://*{_host}')
+if DEBUG:
     CSRF_TRUSTED_ORIGINS.append('https://*.e2b.app')
+
+# Production hardening (HTTPS)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') != 'False'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

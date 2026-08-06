@@ -1,0 +1,84 @@
+# Render Blueprint — deploy in one click.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# How to use:
+# 1. Push this file to your repo on GitHub.
+# 2. Go to https://dashboard.render.com/blueprints and click "New Blueprint Instance".
+# 3. Connect your repo "Olable/portfolio". Render will auto-provision everything.
+#
+# Environment variables you can set (or set in the Render dashboard):
+#   DJANGO_SECRET_KEY   — (auto-generated if not set using Render's $SECRET_KEY)
+#   DJANGO_DEBUG        — False
+#   WEB_CONCURRENCY     — gunicorn workers (default 3)
+
+databases:
+  - name: olable-portfolio-db
+    plan: free
+    databaseName: olable_portfolio
+    user: olable
+    region: oregon  # change as desired (e.g. frankfurt)
+
+services:
+  - type: web
+    name: olable-portfolio
+    runtime: docker
+    plan: free
+    region: oregon
+    # Use the Dockerfile at repo root
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    numInstances: 1
+    healthCheckPath: /api/
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: GUNICORN_WORKERS
+        value: "2"
+      # Connect to the Postgres database Render provisions above.
+      # Render injects DATABASE_URL automatically, but we also break it
+      # into components for Django's default DB engine config.
+      - key: DB_ENGINE
+        value: "django.db.backends.postgresql"
+      - key: DB_NAME
+        fromDatabase:
+          name: olable-portfolio-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: olable-portfolio-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: olable-portfolio-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: olable-portfolio-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: olable-portfolio-db
+          property: port
+      # Auto-create an admin superuser on first deploy.
+      # Change these after first login!
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: olable
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@olable.dev
+      - key: DJANGO_SUPERUSER_PASSWORD
+        generateValue: true
+      # Your site URL — set CORS to allow your custom domain here later.
+      - key: CORS_ALLOWED_ORIGINS
+        value: ""
+    # Persistent disk for uploaded media (optional on free tier)
+    # (Free disks are limited; you can skip this if you don't need uploads.)
+    # disks:
+    #   - name: media
+    #     mountPath: /app/backend/media
+    #     sizeGB: 1

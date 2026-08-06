@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+*.env
+*.sqlite3
+db.sqlite3
+staticfiles/
+media/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.env*
+npm-debug.log*
+
+# OS
+.DS_Store
+*.log
+
+# Arena
+.arena/
+.cache/
+
+# Editor
+.vscode/
+.idea/
