@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.env
+*.env
+*.sqlite3
+db.sqlite3
+staticfiles/
+media/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+.DS_Store
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage/
+.nyc_output/
+
+# Misc
+.arena/
+.cache/
