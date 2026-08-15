@@ -75,7 +75,7 @@ class AdminProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         prof, _ = Profile.objects.get_or_create(
             id=1, defaults={
-                'user': request.user,
+                'user': self.request.user,
                 'full_name': request.user.get_full_name() or request.user.username,
                 'title': 'Full-Stack Developer',
                 'about': 'Edit me via admin.',
