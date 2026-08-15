@@ -1,4 +1,4 @@
-# Olble · Portfolio & Blog
+# Olable · Portfolio & Blog
 
 A modern personal portfolio + blog built with **Django** (REST API) and **React** (frontend with Vite + Tailwind CSS).
 
