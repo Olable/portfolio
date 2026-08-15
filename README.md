@@ -1,140 +1,117 @@
-# Olable · Portfolio & Blog
+# Portfolio & Blog — Django REST API + React
 
-A modern personal portfolio + blog built with **Django** (REST API) and **React** (frontend with Vite + Tailwind CSS).
+A personal portfolio and blog application built with a Django REST Framework backend and a React (Vite + Tailwind CSS) frontend, deployable via Docker.
 
-![stack](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) ![DRF](https://img.shields.io/badge/DRF-red?style=flat) ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB) ![Tailwind](https://img.shields.io/badge/Tailwind-38B2AC?style=flat&logo=tailwind-css&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-black?style=flat)
+**Stack:** Django 5 · Django REST Framework · SimpleJWT · React 18 · Vite · Tailwind CSS · Docker
+SQLite in development, PostgreSQL in production.
 
-## ✨ Features
+---
 
-### Portfolio
-- Hero section with animated gradient blobs
-- About / Bio
-- Skills by category with progress bars
-- Projects showcase (featured, tech tags, repo/live links)
-- Experience & Education timelines
-- Contact form (messages saved to DB, viewable in admin)
-- Social links
+## What it does
 
-### Blog
-- Markdown-powered posts (full GFM support)
-- Categories & tags
-- Featured posts
-- Search & filter
-- Comment system (moderated/approved)
-- Reading-time estimate + view counter
-- Pagination / Load more
-- Admin dashboard (React) + Django admin
+**Portfolio**
+- Projects showcase with tech tags and repo/live links
+- Skills, experience and education sections
+- Contact form that persists messages to the database and exposes them in Django admin
 
-### Auth
-- JWT authentication (access + refresh tokens)
-- Register / Login / Logout
-- Profile update endpoint
-- Staff-only write APIs
+**Blog**
+- Posts with categories and tags
+- Search and filtering
+- Comment system with moderation
+- View counter and reading-time estimate
 
-## 🗂 Project Structure
+**Accounts**
+- Registration and login using JWT (`djangorestframework-simplejwt`)
+- Protected admin dashboard route in the React app
+
+---
+
+## Architecture
 
 ```
-olble-portfolio/
-├── backend/
-│   ├── config/          # Django project settings & root URLconf
-│   ├── accounts/        # Custom user + JWT auth
-│   ├── portfolio/       # Profile, Projects, Skills, Experience, Contact
-│   ├── blog/            # Posts, Categories, Tags, Comments
-│   ├── manage.py
-│   └── requirements.txt
-└── frontend/
-    ├── src/
-    │   ├── components/  # Navbar, Footer, Cards, Hero, etc.
-    │   ├── pages/       # Home, About, Projects, Blog, Contact, Admin...
-    │   ├── context/     # AuthContext, ThemeContext
-    │   ├── api/         # Axios client + API helpers
-    │   └── utils/
-    ├── index.html
-    ├── vite.config.js   # Dev proxy to Django on :8000
-    └── tailwind.config.js
+backend/
+  config/       Django project settings, URLs, SPA serving
+  accounts/     Custom user model, JWT auth endpoints
+  blog/         Post, Category, Tag, Comment models + API
+  portfolio/    Project, Skill, Experience models + API
+                management/commands/seed_sample.py — demo data seeder
+frontend/
+  src/pages/       Home, About, Projects, BlogList, BlogPost,
+                   Contact, Login, Register, AdminDashboard, NotFound
+  src/components/  Navbar, Footer, Hero, ProjectCard, BlogCard, Loading
+Dockerfile, Procfile, render.yaml, railway.json
 ```
 
-## 🚀 Quick Start
+The Django backend exposes a REST API and also serves the built React bundle in production (`config/spa.py`), so the whole app deploys as a single service.
 
-### 1. Backend (Django)
+---
 
+## Running locally
+
+**Backend**
 ```bash
 cd backend
-python -m venv ../venv
-source ../venv/bin/activate    # Windows: ..\venv\Scripts\activate
+python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# (Optional) Copy env example and set a secret key
 cp .env.example .env
-
 python manage.py migrate
-python manage.py seed_sample     # seeds demo content + admin user
+python manage.py seed_sample      # optional: load demo content
 python manage.py runserver
 ```
 
-The API will be available at http://localhost:8000
-
-**Seed credentials** (created by `seed_sample`):
-- Username: `olble`
-- Password: `admin123`
-- Superuser / staff access
-
-> ⚠️ Change the password before deploying.
-
-### 2. Frontend (React + Vite)
-
+**Frontend**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — Vite proxies `/api/*`, `/admin`, `/media`, and `/static` to Django automatically.
+Backend runs on `http://localhost:8000`, frontend dev server on `http://localhost:5173`.
 
-### Production build
-
+**Docker**
 ```bash
-cd frontend && npm run build   # outputs to frontend/dist
+docker build -t portfolio .
+docker run -p 8000:8000 --env-file backend/.env portfolio
 ```
 
-Serve `frontend/dist` as static files and run Django with `DEBUG=False` + Whitenoise (already configured) or put it behind Nginx.
+---
 
-## 🔌 API Endpoints
+## Configuration
 
-Public:
-- `GET  /api/portfolio/` – profile
-- `GET  /api/portfolio/projects/` – list projects
-- `GET  /api/portfolio/projects/<slug>/` – project detail
-- `GET  /api/portfolio/skills/` – skill categories + skills
-- `GET  /api/portfolio/experience/`
-- `GET  /api/portfolio/education/`
-- `POST /api/portfolio/contact/` – contact form
-- `GET  /api/blog/posts/` – list posts (supports `?search=`, `?category=`, `?tag=`, `?featured=true`)
-- `GET  /api/blog/posts/<slug>/` – single post (Markdown content + approved comments)
-- `POST /api/blog/posts/<slug>/comment/` – submit comment (needs approval)
-- `GET  /api/blog/categories/` · `/api/blog/tags/`
-- `POST /api/auth/register/` · `POST /api/auth/login/` · `POST /api/auth/refresh/`
+Copy `backend/.env.example` to `backend/.env` and set:
 
-Staff-only (JWT required):
-- `GET/POST  /api/blog/admin/posts/`
-- `GET/PATCH/DELETE /api/blog/admin/posts/<slug>/`
-- `GET/PATCH /api/portfolio/admin/profile/`
-- `GET /api/portfolio/admin/messages/`
+| Variable | Purpose |
+|---|---|
+| `DJANGO_SECRET_KEY` | Django secret key |
+| `DJANGO_DEBUG` | `True` locally, `False` in production |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames |
+| `DB_ENGINE` | Database backend (defaults to SQLite) |
+| `DB_NAME` | Database name or path |
+| `DB_USER` / `DB_PASSWORD` / `DB_HOST` / `DB_PORT` | PostgreSQL connection details (unused with SQLite) |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins |
 
-Django admin is at `/admin/`.
+---
 
-## 🛠 Deployment Checklist
+## Deployment
 
-1. Set `DJANGO_DEBUG=False`
-2. Set a strong `DJANGO_SECRET_KEY`
-3. Add your domain to `DJANGO_ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS`
-4. Use PostgreSQL (set `DB_ENGINE=django.db.backends.postgresql`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`)
-5. `python manage.py collectstatic`
-6. Serve with Gunicorn + Nginx, or deploy to Railway/Render/Heroku/Fly.io
-7. Build React: `cd frontend && npm run build` and serve `dist/` from Nginx or collect it into Django static.
+Deployment configs are included for Render (`render.yaml`) and Railway (`railway.json`). Static files are served with WhiteNoise; `gunicorn` is the production server. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
-## 📝 License
+---
 
-MIT — do what you want, but a mention would be awesome! ❤️
+## Status and roadmap
 
-Built for [github.com/olble](https://github.com/olble).
+Working application. Currently in progress:
+
+- [ ] Test suite — `tests.py` files are still Django stubs
+- [ ] Live deployment URL
+- [ ] CI via GitHub Actions
+- [ ] API documentation (drf-spectacular)
+
+---
+
+## Author
+
+**Akeem Olayemi Yekeen** — Lagos, Nigeria
+[GitHub](https://github.com/Olable) · [LinkedIn](https://www.linkedin.com/in/olayemi-akeem-1140b31b1)
+
+Backend developer with 12 years in accounting and ERP systems (Microsoft Dynamics NAV, Sage Accpac).
