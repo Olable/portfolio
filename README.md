@@ -2,8 +2,6 @@
 
 ![Tests](https://github.com/Olable/portfolio/actions/workflows/ci.yml/badge.svg)
 
-![Tests](https://github.com/Olable/portfolio/actions/workflows/ci.yml/badge.svg)
-
 A personal portfolio and blog application built with a Django REST Framework backend and a React (Vite + Tailwind CSS) frontend, deployable via Docker.
 
 **Stack:** Django 5 · Django REST Framework · SimpleJWT · React 18 · Vite · Tailwind CSS · Docker
